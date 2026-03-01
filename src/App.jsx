@@ -36,7 +36,6 @@ function App({ onLogout, currentUser }) {
   const { addTransactionToSupabase } = useSupabaseSync(currentUser.id, data, setData);
 
   // Удобные геттеры
-  const monthlyIncome = data.monthlyIncome;
   const currentMonth = data.currentMonth;
   const baseExpenses = data.baseExpenses;
   const categories = data.categories;
@@ -44,7 +43,6 @@ function App({ onLogout, currentUser }) {
   const goals = data.goals;
 
   // Удобные сеттеры (используем функциональную форму!)
-  const setMonthlyIncome = (value) => setData(prev => ({ ...prev, monthlyIncome: value }));
   const setCurrentMonth = (value) => setData(prev => ({ ...prev, currentMonth: value }));
   const setBaseExpenses = (value) => setData(prev => ({ ...prev, baseExpenses: value }));
   const setCategories = (value) => setData(prev => ({ ...prev, categories: value }));
@@ -53,9 +51,41 @@ function App({ onLogout, currentUser }) {
 
   // Сохранение происходит автоматически в хуке useSupabaseSync
 
+  // Автоматический переход месяца
+  useEffect(() => {
+    if (!currentMonth || !categories || categories.length === 0) return;
+
+    const realMonth = new Date().toISOString().slice(0, 7);
+    if (realMonth > currentMonth) {
+      // Наступил новый месяц
+      console.log(`Автоматический переход месяца: ${currentMonth} -> ${realMonth}`);
+
+      const updatedCategories = categories.map(cat => {
+        const allocated = getAmountForCategory(cat); // От зарплаты
+        const spent = getSpentThisMonth(cat.name); // Потрачено за месяц
+        const monthlyRemainder = allocated - spent; // Остаток за месяц
+
+        if (cat.carryOver) {
+          return { ...cat, balance: (cat.balance || 0) + monthlyRemainder };
+        } else {
+          return { ...cat, balance: cat.balance || 0 };
+        }
+      });
+
+      setCategories(updatedCategories);
+      setCurrentMonth(realMonth);
+      // alert(`Наступил новый месяц: ${realMonth}. Остатки перенесены.`);
+    }
+  }, [currentMonth, categories]);
+
   // Расчеты
+  // Динамический расчет дохода за текущий месяц из транзакций
+  const monthlyIncome = transactions
+    .filter(t => t.type === 'income' && t.month === currentMonth)
+    .reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
   const totalBaseExpenses = baseExpenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
-  const remainingAfterBase = (parseFloat(monthlyIncome) || 0) - totalBaseExpenses;
+  const remainingAfterBase = monthlyIncome - totalBaseExpenses;
 
   // Расчет расходов за текущий месяц по категориям (по ИМЕНИ категории!)
   const getSpentThisMonth = (categoryName) => {
@@ -172,7 +202,7 @@ function App({ onLogout, currentUser }) {
     };
 
     // Обновляем месячный доход (monthlyIncome) для правильных подсчетов
-    setMonthlyIncome((parseFloat(monthlyIncome) || 0) + numAmount);
+    // setMonthlyIncome((parseFloat(monthlyIncome) || 0) + numAmount); - Удалено, т.к. доход теперь считается динамически.
 
     await addTransactionToSupabase(transaction);
     setShowAddIncome(false);
@@ -235,7 +265,6 @@ function App({ onLogout, currentUser }) {
 
     setCategories(updatedCategories);
     setCurrentMonth(newMonth);
-    setMonthlyIncome(''); // Обнуляем зарплату для нового месяца
 
     alert(`✅ Переход на ${newMonth}\n\nОстатки добавлены к накоплениям:\n${summary}`);
   };
@@ -499,29 +528,13 @@ function App({ onLogout, currentUser }) {
                 })}
               </div>
             </div>
-
-            {/* Next Month Button */}
-            <button onClick={moveToNextMonth} className="btn btn-secondary btn-full">
-              ⏭️ Перейти к следующему месяцу
-            </button>
           </div>
         )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div>
-            {/* Income */}
-            <div className="card">
-              <h2>💵 Месячный доход</h2>
-              <input
-                type="number"
-                value={monthlyIncome}
-                onChange={(e) => setMonthlyIncome(e.target.value)}
-                placeholder="Введите ваш доход"
-                className="input"
-              />
-            </div>
-
+            {/* Блок Месячный доход удален в пользу расчета из списка транзакций */}
             {/* Base Expenses */}
             <div className="card">
               <div className="card-header">
