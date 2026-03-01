@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSupabaseSync } from './useSupabaseSync';
-import './App.css';
 
 function App({ onLogout, currentUser }) {
   // Все данные в одном объекте для синхронизации
