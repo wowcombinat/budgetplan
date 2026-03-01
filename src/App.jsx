@@ -108,8 +108,8 @@ function App({ onLogout, currentUser }) {
     return initialBalance + allocated - spent;
   };
 
-  // Общее накопление - сумма всех доступных балансов
-  const totalSavings = categories.reduce((sum, cat) => sum + Math.max(0, getAvailableBalance(cat)), 0);
+  // Общее накопление - сумма всех балансов (включая дефициты, чтобы честно отнимать перерасход)
+  const totalSavings = categories.reduce((sum, cat) => sum + getAvailableBalance(cat), 0);
 
   // Сумма всех процентов (для проверки)
   const totalPercent = categories.reduce((sum, cat) => sum + (cat.percent || 0), 0);
