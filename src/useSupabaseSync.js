@@ -15,7 +15,7 @@ export function useSupabaseSync(userId, data, setData) {
 
     const loadData = async () => {
       console.log('🔄 Загрузка данных для пользователя:', userId);
-      
+
       try {
         // Загружаем все данные параллельно
         const [settingsRes, expensesRes, catsRes, transRes, goalsRes] = await Promise.all([
@@ -37,9 +37,16 @@ export function useSupabaseSync(userId, data, setData) {
 
         if (hasSupabaseData) {
           console.log('✅ Данные загружены из Supabase');
+
+          let fetchedCurrentMonth = settings?.current_month;
+          if (!fetchedCurrentMonth) {
+            const now = new Date();
+            fetchedCurrentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          }
+
           setData({
             monthlyIncome: settings?.monthly_income?.toString() || '',
-            currentMonth: settings?.current_month || new Date().toISOString().slice(0, 7),
+            currentMonth: fetchedCurrentMonth,
             baseExpenses: expenses && expenses.length > 0 ? expenses.map(e => ({
               id: e.id,
               name: e.name,
@@ -107,7 +114,7 @@ export function useSupabaseSync(userId, data, setData) {
           setData(JSON.parse(saved));
         }
       }
-      
+
       isLoading.current = false;
     };
 
@@ -117,7 +124,7 @@ export function useSupabaseSync(userId, data, setData) {
   // Сохранение данных при изменении
   useEffect(() => {
     if (!userId || !initialized.current || isLoading.current) return;
-    
+
     // Дебаунс
     if (saveTimeout.current) {
       clearTimeout(saveTimeout.current);
@@ -125,7 +132,7 @@ export function useSupabaseSync(userId, data, setData) {
 
     saveTimeout.current = setTimeout(async () => {
       console.log('💾 Сохранение данных...');
-      
+
       // Сохраняем в localStorage как backup
       const storageKey = `budgetData_${userId}`;
       localStorage.setItem(storageKey, JSON.stringify(data));
@@ -225,28 +232,11 @@ export function useSupabaseSync(userId, data, setData) {
       ...transaction
     };
 
-    // Добавляем в локальное состояние
+    // Добавляем в локальное состояние. Авто-сохранение (useEffect) само синхронизирует это с базой данных без дублей.
     setData(prev => ({
       ...prev,
       transactions: [newTransaction, ...prev.transactions]
     }));
-
-    // Сохраняем в Supabase
-    try {
-      await supabase.from('transactions').insert({
-        user_id: userId,
-        type: transaction.type,
-        date: transaction.date,
-        month: transaction.month,
-        category_id: transaction.categoryId,
-        category_name: transaction.categoryName,
-        amount: transaction.amount,
-        description: transaction.description
-      });
-      console.log('✅ Транзакция сохранена в Supabase');
-    } catch (error) {
-      console.error('❌ Ошибка сохранения транзакции:', error);
-    }
   }, [userId, setData]);
 
   return { addTransactionToSupabase };

@@ -23,7 +23,7 @@ function App({ onLogout, currentUser }) {
     transactions: [],
     goals: []
   });
-  
+
   // UI состояния
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showAddExpense, setShowAddExpense] = useState(false);
@@ -31,10 +31,10 @@ function App({ onLogout, currentUser }) {
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const TRANSACTIONS_PER_PAGE = 20;
-  
+
   // Подключаем синхронизацию (localStorage + Supabase в будущем)
   const { addTransactionToSupabase } = useSupabaseSync(currentUser.id, data, setData);
-  
+
   // Удобные геттеры
   const monthlyIncome = data.monthlyIncome;
   const currentMonth = data.currentMonth;
@@ -42,21 +42,21 @@ function App({ onLogout, currentUser }) {
   const categories = data.categories;
   const transactions = data.transactions;
   const goals = data.goals;
-  
+
   // Удобные сеттеры (используем функциональную форму!)
-  const setMonthlyIncome = (value) => setData(prev => ({...prev, monthlyIncome: value}));
-  const setCurrentMonth = (value) => setData(prev => ({...prev, currentMonth: value}));
-  const setBaseExpenses = (value) => setData(prev => ({...prev, baseExpenses: value}));
-  const setCategories = (value) => setData(prev => ({...prev, categories: value}));
-  const setTransactions = (value) => setData(prev => ({...prev, transactions: value}));
-  const setGoals = (value) => setData(prev => ({...prev, goals: value}));
+  const setMonthlyIncome = (value) => setData(prev => ({ ...prev, monthlyIncome: value }));
+  const setCurrentMonth = (value) => setData(prev => ({ ...prev, currentMonth: value }));
+  const setBaseExpenses = (value) => setData(prev => ({ ...prev, baseExpenses: value }));
+  const setCategories = (value) => setData(prev => ({ ...prev, categories: value }));
+  const setTransactions = (value) => setData(prev => ({ ...prev, transactions: value }));
+  const setGoals = (value) => setData(prev => ({ ...prev, goals: value }));
 
   // Сохранение происходит автоматически в хуке useSupabaseSync
 
   // Расчеты
   const totalBaseExpenses = baseExpenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
   const remainingAfterBase = (parseFloat(monthlyIncome) || 0) - totalBaseExpenses;
-  
+
   // Расчет расходов за текущий месяц по категориям (по ИМЕНИ категории!)
   const getSpentThisMonth = (categoryName) => {
     return transactions
@@ -80,7 +80,7 @@ function App({ onLogout, currentUser }) {
 
   // Общее накопление - сумма всех доступных балансов
   const totalSavings = categories.reduce((sum, cat) => sum + Math.max(0, getAvailableBalance(cat)), 0);
-  
+
   // Сумма всех процентов (для проверки)
   const totalPercent = categories.reduce((sum, cat) => sum + (cat.percent || 0), 0);
 
@@ -96,19 +96,19 @@ function App({ onLogout, currentUser }) {
 
   // Обновление базового расхода
   const updateBaseExpense = (id, field, value) => {
-    setBaseExpenses(baseExpenses.map(exp => 
+    setBaseExpenses(baseExpenses.map(exp =>
       exp.id === id ? { ...exp, [field]: value } : exp
     ));
   };
 
   // Добавление категории
   const addCategory = () => {
-    setCategories([...categories, { 
-      id: Date.now(), 
-      name: '', 
-      percent: 0, 
+    setCategories([...categories, {
+      id: Date.now(),
+      name: '',
+      percent: 0,
       balance: 0,
-      carryOver: false 
+      carryOver: false
     }]);
   };
 
@@ -119,7 +119,7 @@ function App({ onLogout, currentUser }) {
 
   // Обновление категории
   const updateCategory = (id, field, value) => {
-    setCategories(categories.map(cat => 
+    setCategories(categories.map(cat =>
       cat.id === id ? { ...cat, [field]: value } : cat
     ));
   };
@@ -133,7 +133,7 @@ function App({ onLogout, currentUser }) {
     const numAmount = parseFloat(amount);
     // Сравниваем ID как строки (могут быть UUID или числа)
     const category = categories.find(c => String(c.id) === String(categoryId));
-    
+
     if (!category) {
       console.error('Категория не найдена:', categoryId);
       alert('Ошибка: категория не найдена');
@@ -158,7 +158,7 @@ function App({ onLogout, currentUser }) {
     setShowAddExpense(false);
   };
 
-  // Добавление дохода в историю
+  // Добавление дохода в историю (и автоматическое добавление к месячному бюджету!)
   const addIncome = async (amount, description) => {
     const numAmount = parseFloat(amount);
     if (!numAmount || numAmount <= 0) return;
@@ -171,13 +171,16 @@ function App({ onLogout, currentUser }) {
       description: description || 'Доход'
     };
 
+    // Обновляем месячный доход (monthlyIncome) для правильных подсчетов
+    setMonthlyIncome((parseFloat(monthlyIncome) || 0) + numAmount);
+
     await addTransactionToSupabase(transaction);
     setShowAddIncome(false);
   };
 
   // Пометить транзакцию как "ожидает возврат"
   const markForRefund = (transactionId) => {
-    setTransactions(transactions.map(t => 
+    setTransactions(transactions.map(t =>
       t.id === transactionId ? { ...t, refundPending: true } : t
     ));
   };
@@ -191,7 +194,7 @@ function App({ onLogout, currentUser }) {
 
   // Отменить запрос на возврат
   const cancelRefund = (transactionId) => {
-    setTransactions(transactions.map(t => 
+    setTransactions(transactions.map(t =>
       t.id === transactionId ? { ...t, refundPending: false } : t
     ));
   };
@@ -201,13 +204,13 @@ function App({ onLogout, currentUser }) {
     const date = new Date(currentMonth);
     date.setMonth(date.getMonth() + 1);
     const newMonth = date.toISOString().slice(0, 7);
-    
+
     // Для каждой категории: остаток за месяц добавляется к накоплениям
     const updatedCategories = categories.map(cat => {
       const allocated = getAmountForCategory(cat); // От зарплаты
       const spent = getSpentThisMonth(cat.name); // Потрачено за месяц (по имени!)
       const monthlyRemainder = allocated - spent; // Остаток за месяц
-      
+
       if (cat.carryOver) {
         // Накопительная категория: добавляем остаток к накоплениям
         return {
@@ -222,18 +225,18 @@ function App({ onLogout, currentUser }) {
         };
       }
     });
-    
+
     // Показываем итоги
     const summary = updatedCategories.map(cat => {
       const oldBalance = categories.find(c => c.id === cat.id)?.balance || 0;
       const diff = cat.balance - oldBalance;
       return `${cat.name}: ${diff >= 0 ? '+' : ''}${diff.toLocaleString('de-DE')}€ → ${cat.balance.toLocaleString('de-DE')}€`;
     }).join('\n');
-    
+
     setCategories(updatedCategories);
     setCurrentMonth(newMonth);
     setMonthlyIncome(''); // Обнуляем зарплату для нового месяца
-    
+
     alert(`✅ Переход на ${newMonth}\n\nОстатки добавлены к накоплениям:\n${summary}`);
   };
 
@@ -242,7 +245,7 @@ function App({ onLogout, currentUser }) {
     // Ищем категорию по имени
     const category = categories.find(c => c.name === goalData.categoryName);
     const currentAvailable = category ? getAvailableBalance(category) : 0;
-    
+
     const newGoal = {
       id: Date.now(),
       name: goalData.name,
@@ -268,21 +271,21 @@ function App({ onLogout, currentUser }) {
   // Расчет прогресса цели (связь по ИМЕНИ категории!)
   const calculateGoalProgress = (goal) => {
     if (!goal) return { progress: 0, remaining: 0, percent: 0, daysLeft: 0, daysToGoal: 0, currentBalance: 0, monthlyAmount: 0 };
-    
+
     const targetAmount = goal.targetAmount || 0;
-    
+
     // Ищем категорию по имени
     const category = categories.find(c => c.name === goal.categoryName);
     if (!category) {
-      return { 
-        progress: 0, 
-        remaining: targetAmount, 
-        percent: 0, 
-        daysLeft: 0, 
-        daysToGoal: 0, 
-        currentBalance: 0, 
+      return {
+        progress: 0,
+        remaining: targetAmount,
+        percent: 0,
+        daysLeft: 0,
+        daysToGoal: 0,
+        currentBalance: 0,
         monthlyAmount: 0,
-        categoryNotFound: true 
+        categoryNotFound: true
       };
     }
 
@@ -290,7 +293,7 @@ function App({ onLogout, currentUser }) {
     const currentBalance = getAvailableBalance(category);
     // Сколько приходит в месяц от зарплаты
     const monthlyAmount = getAmountForCategory(category);
-    
+
     // Прогресс = текущий баланс (всё что накоплено)
     const progress = Math.max(0, currentBalance);
     const remaining = Math.max(0, targetAmount - progress);
@@ -300,7 +303,7 @@ function App({ onLogout, currentUser }) {
     const targetDate = new Date(goal.targetDate);
     const today = new Date();
     const daysLeft = Math.max(0, Math.ceil((targetDate - today) / (1000 * 60 * 60 * 24)));
-    
+
     // Дней до достижения цели (при текущем темпе)
     let daysToGoal = 0;
     if (remaining <= 0) {
@@ -326,22 +329,22 @@ function App({ onLogout, currentUser }) {
   // Группировка транзакций по датам
   const groupTransactionsByDate = (transactions) => {
     const grouped = {};
-    
+
     [...transactions].reverse().forEach(tr => {
       const date = new Date(tr.date);
-      const dateKey = date.toLocaleDateString('ru-RU', { 
-        year: 'numeric', 
-        month: 'long', 
+      const dateKey = date.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
         day: 'numeric',
         weekday: 'long'
       });
-      
+
       if (!grouped[dateKey]) {
         grouped[dateKey] = [];
       }
       grouped[dateKey].push(tr);
     });
-    
+
     return grouped;
   };
 
@@ -349,14 +352,14 @@ function App({ onLogout, currentUser }) {
     <div className="app">
       {/* Header */}
       <header className="header">
-      <div>
+        <div>
           <h1>💰 Планировщик Бюджета</h1>
           <p>
             <span style={{ fontWeight: 'bold', color: '#5c6bc0' }}>{currentUser.displayName}</span>
             <span style={{ margin: '0 0.5rem', color: '#ccc' }}>•</span>
             Месяц: {currentMonth}
           </p>
-      </div>
+        </div>
         <button onClick={onLogout} className="btn btn-secondary" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
           🚪 Выход
         </button>
@@ -458,7 +461,7 @@ function App({ onLogout, currentUser }) {
                   const allocated = getAmountForCategory(cat);
                   const spent = getSpentThisMonth(cat.name);
                   const available = getAvailableBalance(cat);
-                  
+
                   return (
                     <div key={cat.id} className="category-item">
                       <div className="category-header">
@@ -485,7 +488,7 @@ function App({ onLogout, currentUser }) {
                       <div className="progress-bar">
                         <div
                           className="progress-fill"
-                          style={{ 
+                          style={{
                             width: `${Math.min(Math.max((available / ((cat.balance || 0) + allocated)) * 100, 0), 100)}%`,
                             backgroundColor: available < 0 ? '#f44336' : '#5c6bc0'
                           }}
@@ -642,7 +645,7 @@ function App({ onLogout, currentUser }) {
                   + Создать цель
                 </button>
               </div>
-              
+
               {goals.length === 0 ? (
                 <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
@@ -665,7 +668,7 @@ function App({ onLogout, currentUser }) {
                     // Ищем категорию по ИМЕНИ
                     const category = categories.find(c => c.name === goal.categoryName);
                     const monthlyAmount = category ? getAmountForCategory(category) : 0;
-                    
+
                     return (
                       <div key={goal.id} style={{
                         border: '2px solid ' + motivation.color,
@@ -687,7 +690,7 @@ function App({ onLogout, currentUser }) {
                                 ⚠️ Категория "{goal.categoryName}" не найдена. Создайте её или удалите цель.
                               </p>
                             )}
-      </div>
+                          </div>
                           <button
                             onClick={() => deleteGoal(goal.id)}
                             className="btn btn-danger"
@@ -699,9 +702,9 @@ function App({ onLogout, currentUser }) {
 
                         {/* Прогресс-бар */}
                         <div style={{ marginBottom: '1rem' }}>
-                          <div style={{ 
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
                             marginBottom: '0.5rem',
                             fontWeight: 'bold'
                           }}>
@@ -735,9 +738,9 @@ function App({ onLogout, currentUser }) {
                         </div>
 
                         {/* Статистика */}
-                        <div style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', 
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
                           gap: '1rem',
                           marginBottom: '1rem'
                         }}>
@@ -779,8 +782,8 @@ function App({ onLogout, currentUser }) {
                         {/* Прогноз достижения */}
                         {progress.remaining > 0 && category && monthlyAmount > 0 && (
                           <div style={{
-                            background: Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft 
-                              ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)' 
+                            background: Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft
+                              ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
                               : 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
                             padding: '1rem',
                             borderRadius: '8px',
@@ -790,16 +793,16 @@ function App({ onLogout, currentUser }) {
                             <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                               📊 При текущем темпе (+{monthlyAmount.toLocaleString('de-DE')} €/мес)
                             </div>
-                            <div style={{ 
-                              fontSize: '1.3rem', 
+                            <div style={{
+                              fontSize: '1.3rem',
                               fontWeight: 'bold',
                               color: Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft ? '#2e7d32' : '#c62828'
                             }}>
                               ~{Math.ceil(progress.remaining / monthlyAmount * 30)} дней до цели
                             </div>
                             <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#666' }}>
-                              {Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft 
-                                ? '✅ Успеете к сроку!' 
+                              {Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft
+                                ? '✅ Успеете к сроку!'
                                 : `⚠️ Не успеете на ${Math.ceil(progress.remaining / monthlyAmount * 30) - progress.daysLeft} дней`}
                             </div>
                           </div>
@@ -807,9 +810,9 @@ function App({ onLogout, currentUser }) {
 
                         {/* Описание */}
                         {goal.description && (
-                          <div style={{ 
-                            background: 'white', 
-                            padding: '1rem', 
+                          <div style={{
+                            background: 'white',
+                            padding: '1rem',
                             borderRadius: '8px',
                             fontStyle: 'italic',
                             color: '#666'
@@ -830,7 +833,7 @@ function App({ onLogout, currentUser }) {
         {activeTab === 'history' && (
           <div className="card">
             <h2>История транзакций</h2>
-            
+
             {/* Статистика */}
             {transactions.length > 0 && (() => {
               const now = new Date();
@@ -838,19 +841,19 @@ function App({ onLogout, currentUser }) {
               const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
               const monthAgo = new Date(today.getFullYear(), today.getMonth(), 1);
               const yearAgo = new Date(today.getFullYear(), 0, 1);
-              
+
               const calcStats = (filterFn) => {
                 const filtered = transactions.filter(filterFn);
                 const income = filtered.filter(t => t.type === 'income').reduce((s, t) => s + (t.amount || 0), 0);
                 const expense = filtered.filter(t => t.type === 'expense' && !t.refundPending).reduce((s, t) => s + (t.amount || 0), 0);
                 return { income, expense, balance: income - expense };
               };
-              
+
               const todayStats = calcStats(t => new Date(t.date) >= today);
               const weekStats = calcStats(t => new Date(t.date) >= weekAgo);
               const monthStats = calcStats(t => new Date(t.date) >= monthAgo);
               const yearStats = calcStats(t => new Date(t.date) >= yearAgo);
-              
+
               const StatBlock = ({ title, icon, stats }) => (
                 <div style={{
                   background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
@@ -863,8 +866,8 @@ function App({ onLogout, currentUser }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     <div style={{ color: '#4caf50', fontSize: '0.9rem' }}>+{stats.income.toLocaleString('de-DE')} €</div>
                     <div style={{ color: '#f44336', fontSize: '0.9rem' }}>-{stats.expense.toLocaleString('de-DE')} €</div>
-                    <div style={{ 
-                      fontWeight: 'bold', 
+                    <div style={{
+                      fontWeight: 'bold',
                       fontSize: '1.1rem',
                       color: stats.balance >= 0 ? '#2e7d32' : '#c62828',
                       borderTop: '1px solid #ddd',
@@ -876,7 +879,7 @@ function App({ onLogout, currentUser }) {
                   </div>
                 </div>
               );
-              
+
               return (
                 <div style={{
                   display: 'flex',
@@ -891,25 +894,25 @@ function App({ onLogout, currentUser }) {
                 </div>
               );
             })()}
-            
+
             {transactions.length === 0 ? (
               <p className="empty-state">Пока нет транзакций</p>
             ) : (
               <div>
                 {/* Сортируем транзакции: новые сверху */}
                 {(() => {
-                  const sortedTransactions = [...transactions].sort((a, b) => 
+                  const sortedTransactions = [...transactions].sort((a, b) =>
                     new Date(b.date) - new Date(a.date)
                   );
-                  
+
                   // Пагинация
                   const totalPages = Math.ceil(sortedTransactions.length / TRANSACTIONS_PER_PAGE);
                   const startIndex = (historyPage - 1) * TRANSACTIONS_PER_PAGE;
                   const paginatedTransactions = sortedTransactions.slice(startIndex, startIndex + TRANSACTIONS_PER_PAGE);
-                  
+
                   // Группируем по датам
                   const grouped = groupTransactionsByDate(paginatedTransactions);
-                  
+
                   return (
                     <>
                       {Object.entries(grouped).map(([dateKey, dayTransactions]) => (
@@ -926,7 +929,7 @@ function App({ onLogout, currentUser }) {
                           }}>
                             📅 {dateKey}
                           </div>
-                          
+
                           {/* Транзакции за день (новые сверху) */}
                           {dayTransactions.sort((a, b) => new Date(b.date) - new Date(a.date)).map(tr => (
                             <div key={tr.id} className="transaction-item" style={{
@@ -940,17 +943,17 @@ function App({ onLogout, currentUser }) {
                                   <div className="transaction-type">
                                     {tr.refundPending && '🔄 '}
                                     {tr.type === 'income' ? '💰 Доход' : '💸 Расход'}
-                                    {tr.refundPending && <span style={{ 
-                                      color: '#ff9800', 
+                                    {tr.refundPending && <span style={{
+                                      color: '#ff9800',
                                       fontSize: '0.8rem',
                                       marginLeft: '0.5rem'
                                     }}>Ожидает возврат</span>}
                                   </div>
                                   <div className="transaction-desc">{tr.description || tr.categoryName}</div>
                                   <div className="transaction-date">
-                                    {new Date(tr.date).toLocaleTimeString('ru-RU', { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
+                                    {new Date(tr.date).toLocaleTimeString('ru-RU', {
+                                      hour: '2-digit',
+                                      minute: '2-digit'
                                     })}
                                   </div>
                                 </div>
@@ -959,7 +962,7 @@ function App({ onLogout, currentUser }) {
                                     style={tr.refundPending ? { textDecoration: 'line-through', opacity: 0.6 } : {}}>
                                     {tr.type === 'income' ? '+' : '-'}{tr.amount.toLocaleString('de-DE')} €
                                   </div>
-                                  
+
                                   {/* Кнопки возврата */}
                                   {tr.type === 'expense' && !tr.refundPending && (
                                     <button
@@ -978,7 +981,7 @@ function App({ onLogout, currentUser }) {
                                       ↩️ Возврат
                                     </button>
                                   )}
-                                  
+
                                   {tr.refundPending && (
                                     <div style={{ display: 'flex', gap: '0.25rem' }}>
                                       <button
@@ -1017,7 +1020,7 @@ function App({ onLogout, currentUser }) {
                               </div>
                             </div>
                           ))}
-                          
+
                           {/* Итого за день */}
                           <div style={{
                             borderTop: '2px solid #e0e0e0',
@@ -1030,7 +1033,7 @@ function App({ onLogout, currentUser }) {
                             fontSize: '0.95rem'
                           }}>
                             <span>Итого за день:</span>
-                            <span style={{ 
+                            <span style={{
                               color: dayTransactions.reduce((sum, tr) => {
                                 return sum + (tr.type === 'expense' ? -tr.amount : tr.amount);
                               }, 0) < 0 ? '#f44336' : '#4caf50'
@@ -1042,7 +1045,7 @@ function App({ onLogout, currentUser }) {
                           </div>
                         </div>
                       ))}
-                      
+
                       {/* Пагинация */}
                       {totalPages > 1 && (
                         <div style={{
@@ -1054,7 +1057,7 @@ function App({ onLogout, currentUser }) {
                           padding: '1rem',
                           borderTop: '1px solid #e0e0e0'
                         }}>
-                          <button 
+                          <button
                             onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
                             disabled={historyPage === 1}
                             className="btn btn-secondary"
@@ -1065,7 +1068,7 @@ function App({ onLogout, currentUser }) {
                           <span style={{ fontSize: '0.9rem', color: '#666' }}>
                             Страница {historyPage} из {totalPages}
                           </span>
-                          <button 
+                          <button
                             onClick={() => setHistoryPage(p => Math.min(totalPages, p + 1))}
                             disabled={historyPage === totalPages}
                             className="btn btn-secondary"
@@ -1075,11 +1078,11 @@ function App({ onLogout, currentUser }) {
                           </button>
                         </div>
                       )}
-                      
+
                       {/* Информация о количестве */}
-                      <div style={{ 
-                        textAlign: 'center', 
-                        color: '#666', 
+                      <div style={{
+                        textAlign: 'center',
+                        color: '#666',
                         fontSize: '0.85rem',
                         marginTop: '1rem'
                       }}>
@@ -1112,18 +1115,18 @@ function App({ onLogout, currentUser }) {
             >
               <div className="form-group">
                 <label>Категория</label>
-                  <select name="category" required className="input">
-                    {categories
-                      .filter(cat => !cat.isSavings && cat.name !== 'Новый бизнес' && cat.name !== 'На черный день') // Исключаем накопительные категории
-                      .map(cat => {
-                        const available = getAvailableBalance(cat);
-                        return (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.name} ({available.toLocaleString('de-DE')} €{available < 0 ? ' - ДЕФИЦИТ' : ''})
-                          </option>
-                        );
-                      })}
-                  </select>
+                <select name="category" required className="input">
+                  {categories
+                    .filter(cat => !cat.isSavings && cat.name !== 'Новый бизнес' && cat.name !== 'На черный день') // Исключаем накопительные категории
+                    .map(cat => {
+                      const available = getAvailableBalance(cat);
+                      return (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name} ({available.toLocaleString('de-DE')} €{available < 0 ? ' - ДЕФИЦИТ' : ''})
+                        </option>
+                      );
+                    })}
+                </select>
               </div>
               <div className="form-group">
                 <label>Сумма</label>
