@@ -382,15 +382,15 @@ function App({ onLogout, currentUser }) {
       {/* Header */}
       <header className="header">
         <div>
-          <h1>💰 Планировщик Бюджета</h1>
+          <h1>💰 Планировщик</h1>
           <p>
-            <span style={{ fontWeight: 'bold', color: '#5c6bc0' }}>{currentUser.displayName}</span>
-            <span style={{ margin: '0 0.5rem', color: '#ccc' }}>•</span>
-            Месяц: {currentMonth}
+            <span style={{ fontWeight: '600' }}>{currentUser.displayName}</span>
+            <span style={{ margin: '0 0.4rem', opacity: 0.5 }}>•</span>
+            {currentMonth}
           </p>
         </div>
-        <button onClick={onLogout} className="btn btn-secondary" style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}>
-          🚪 Выход
+        <button onClick={onLogout} className="btn btn-secondary" style={{ padding: '0.6rem 1rem', fontSize: '0.9rem', borderRadius: '10px' }}>
+          Выход
         </button>
       </header>
 
@@ -428,7 +428,7 @@ function App({ onLogout, currentUser }) {
         {activeTab === 'dashboard' && (
           <div>
             {/* Summary Cards */}
-            <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+            <div className="grid">
               <div className="stat-card">
                 <h3>Доход за месяц</h3>
                 <div className="amount income">
@@ -442,14 +442,14 @@ function App({ onLogout, currentUser }) {
                 </div>
               </div>
               <div className="stat-card">
-                <h3>Остаток для распределения</h3>
+                <h3>Остаток</h3>
                 <div className="amount balance">
                   {remainingAfterBase.toLocaleString('de-DE')} €
                 </div>
               </div>
-              <div className="stat-card" style={{ background: 'linear-gradient(135deg, #4caf50 0%, #45a049 100%)', color: 'white' }}>
-                <h3 style={{ color: 'rgba(255,255,255,0.9)' }}>💰 Общее накопление</h3>
-                <div className="amount" style={{ color: 'white' }}>
+              <div className="stat-card total-savings">
+                <h3>💰 Общее накопление</h3>
+                <div className="amount">
                   {totalSavings.toLocaleString('de-DE')} €
                 </div>
               </div>
@@ -457,17 +457,15 @@ function App({ onLogout, currentUser }) {
 
             {/* Информация о распределении (автоматический расчет) */}
             {remainingAfterBase > 0 && (
-              <div className="card" style={{ background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)', border: '2px solid #4caf50' }}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.9rem', color: '#2e7d32', marginBottom: '0.5rem' }}>
-                    💡 Доступно для распределения по категориям
-                  </div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1b5e20' }}>
-                    {remainingAfterBase.toLocaleString('de-DE')} €
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#388e3c', marginTop: '0.5rem' }}>
-                    Расходы автоматически отнимаются от баланса категорий
-                  </div>
+              <div className="card allocation-info" style={{ textAlign: 'center' }}>
+                <h3 style={{ textTransform: 'none', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                  Для распределения по категориям
+                </h3>
+                <div className="amount" style={{ fontSize: '1.8rem', fontWeight: '800' }}>
+                  {remainingAfterBase.toLocaleString('de-DE')} €
+                </div>
+                <div style={{ fontSize: '0.85rem', opacity: 0.8, marginTop: '0.5rem', fontWeight: '500' }}>
+                  💡 Расходы отнимаются от баланса категорий
                 </div>
               </div>
             )}
@@ -496,19 +494,19 @@ function App({ onLogout, currentUser }) {
                       <div className="category-header">
                         <div className="category-info">
                           <h3>{cat.name} {cat.isSavings && '💰'}</h3>
-                          <div style={{ fontSize: '0.8rem', color: '#666', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                            <span>💵 Накопления: {(cat.balance || 0).toLocaleString('de-DE')}€</span>
-                            <span style={{ color: '#4caf50' }}>➕ От зарплаты: {allocated.toLocaleString('de-DE')}€</span>
-                            {spent > 0 && <span style={{ color: '#f44336' }}>➖ Потрачено: {spent.toLocaleString('de-DE')}€</span>}
+                          <div style={{ fontSize: '0.85rem', color: 'var(--ios-text-secondary)', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem', fontWeight: '500' }}>
+                            <span>Накопления: {(cat.balance || 0).toLocaleString('de-DE')}€</span>
+                            <span className="income">От зарплаты: {allocated.toLocaleString('de-DE')}€</span>
+                            {spent > 0 && <span className="expense">Отнято: {spent.toLocaleString('de-DE')}€</span>}
                           </div>
                           {available < 0 && (
-                            <p style={{ fontSize: '0.875rem', color: '#f44336', fontWeight: 'bold', marginTop: '0.25rem' }}>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--ios-red)', fontWeight: 'bold', marginTop: '0.4rem' }}>
                               ⚠️ Дефицит!
                             </p>
                           )}
                         </div>
                         <div className="category-balance">
-                          <div className="amount" style={{ color: available < 0 ? '#f44336' : '#5c6bc0', fontSize: '1.3rem' }}>
+                          <div className={`amount ${available < 0 ? 'expense' : ''}`}>
                             {available.toLocaleString('de-DE')} €
                           </div>
                           <div className="percent">{cat.percent}%</div>
@@ -660,10 +658,10 @@ function App({ onLogout, currentUser }) {
               </div>
 
               {goals.length === 0 ? (
-                <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                <div className="empty-state">
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎯</div>
                   <h3 style={{ marginBottom: '0.5rem' }}>Пока нет целей</h3>
-                  <p style={{ color: '#666' }}>Создайте свою первую цель и следите за прогрессом!</p>
+                  <p>Создайте свою первую цель и следите за прогрессом!</p>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gap: '1.5rem' }}>
@@ -683,11 +681,9 @@ function App({ onLogout, currentUser }) {
                     const monthlyAmount = category ? getAmountForCategory(category) : 0;
 
                     return (
-                      <div key={goal.id} style={{
-                        border: '2px solid ' + motivation.color,
-                        borderRadius: '12px',
-                        padding: '1.5rem',
-                        background: 'linear-gradient(135deg, ' + motivation.color + '15 0%, white 100%)'
+                      <div key={goal.id} className="card" style={{
+                        borderColor: motivation.color,
+                        borderWidth: '2px'
                       }}>
                         {/* Заголовок цели */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
@@ -727,7 +723,7 @@ function App({ onLogout, currentUser }) {
                           <div style={{
                             width: '100%',
                             height: '24px',
-                            background: '#e0e0e0',
+                            background: 'var(--ios-separator)',
                             borderRadius: '12px',
                             overflow: 'hidden',
                             position: 'relative'
@@ -735,7 +731,7 @@ function App({ onLogout, currentUser }) {
                             <div style={{
                               width: progress.percent + '%',
                               height: '100%',
-                              background: 'linear-gradient(90deg, ' + motivation.color + ' 0%, ' + motivation.color + 'dd 100%)',
+                              background: motivation.color,
                               transition: 'width 0.5s ease',
                               display: 'flex',
                               alignItems: 'center',
@@ -757,36 +753,36 @@ function App({ onLogout, currentUser }) {
                           gap: '1rem',
                           marginBottom: '1rem'
                         }}>
-                          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>💰 Сейчас (накоп. + зарплата)</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: motivation.color }}>
+                          <div style={{ background: 'var(--ios-card)', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--ios-text-secondary)', marginBottom: '0.25rem' }}>💰 Сейчас (накоп. + зарплата)</div>
+                            <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: motivation.color, letterSpacing: '-0.5px' }}>
                               {(progress.currentBalance || 0).toLocaleString('de-DE')} €
                             </div>
                           </div>
-                          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>📈 В месяц (от зарплаты)</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4caf50' }}>
+                          <div style={{ background: 'var(--ios-card)', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--ios-text-secondary)', marginBottom: '0.25rem' }}>📈 В месяц (от зарплаты)</div>
+                            <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--ios-green)', letterSpacing: '-0.5px' }}>
                               +{(monthlyAmount || 0).toLocaleString('de-DE')} €
                             </div>
                           </div>
-                          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>🎯 Цель</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                          <div style={{ background: 'var(--ios-card)', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--ios-text-secondary)', marginBottom: '0.25rem' }}>🎯 Цель</div>
+                            <div style={{ fontSize: '1.3rem', fontWeight: 'bold', letterSpacing: '-0.5px' }}>
                               {(goal.targetAmount || 0).toLocaleString('de-DE')} €
                             </div>
                           </div>
-                          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>⏳ Осталось накопить</div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: progress.remaining > 0 ? '#f44336' : '#4caf50' }}>
+                          <div style={{ background: 'var(--ios-card)', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--ios-text-secondary)', marginBottom: '0.25rem' }}>⏳ Осталось накопить</div>
+                            <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: progress.remaining > 0 ? 'var(--ios-red)' : 'var(--ios-green)', letterSpacing: '-0.5px' }}>
                               {Math.max(0, progress.remaining).toLocaleString('de-DE')} €
                             </div>
                           </div>
-                          <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>📅 До дедлайна</div>
+                          <div style={{ background: 'var(--ios-card)', padding: '1rem', borderRadius: '16px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--ios-text-secondary)', marginBottom: '0.25rem' }}>📅 До дедлайна</div>
                             <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
                               {progress.daysLeft || 0} дн
                             </div>
-                            <div style={{ fontSize: '0.7rem', color: '#999' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--ios-text-secondary)' }}>
                               ({new Date(goal.targetDate).toLocaleDateString('ru-RU')})
                             </div>
                           </div>
@@ -796,24 +792,25 @@ function App({ onLogout, currentUser }) {
                         {progress.remaining > 0 && category && monthlyAmount > 0 && (
                           <div style={{
                             background: Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft
-                              ? 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)'
-                              : 'linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)',
+                              ? 'rgba(52, 199, 89, 0.1)'
+                              : 'rgba(255, 59, 48, 0.1)',
+                            border: '1px solid ' + (Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft ? 'rgba(52, 199, 89, 0.3)' : 'rgba(255, 59, 48, 0.3)'),
                             padding: '1rem',
-                            borderRadius: '8px',
+                            borderRadius: '14px',
                             marginTop: '1rem',
                             textAlign: 'center'
                           }}>
-                            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                            <div style={{ fontSize: '0.9rem', marginBottom: '0.5rem', fontWeight: '500' }}>
                               📊 При текущем темпе (+{monthlyAmount.toLocaleString('de-DE')} €/мес)
                             </div>
                             <div style={{
                               fontSize: '1.3rem',
                               fontWeight: 'bold',
-                              color: Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft ? '#2e7d32' : '#c62828'
+                              color: Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft ? 'var(--ios-green)' : 'var(--ios-red)'
                             }}>
                               ~{Math.ceil(progress.remaining / monthlyAmount * 30)} дней до цели
                             </div>
-                            <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: '#666' }}>
+                            <div style={{ fontSize: '0.8rem', marginTop: '0.5rem', color: 'var(--ios-text-secondary)', fontWeight: '600' }}>
                               {Math.ceil(progress.remaining / monthlyAmount * 30) <= progress.daysLeft
                                 ? '✅ Успеете к сроку!'
                                 : `⚠️ Не успеете на ${Math.ceil(progress.remaining / monthlyAmount * 30) - progress.daysLeft} дней`}
@@ -824,11 +821,12 @@ function App({ onLogout, currentUser }) {
                         {/* Описание */}
                         {goal.description && (
                           <div style={{
-                            background: 'white',
+                            background: 'var(--ios-card)',
                             padding: '1rem',
-                            borderRadius: '8px',
+                            borderRadius: '14px',
                             fontStyle: 'italic',
-                            color: '#666'
+                            color: 'var(--ios-text-secondary)',
+                            marginTop: '0.5rem'
                           }}>
                             💬 {goal.description}
                           </div>
